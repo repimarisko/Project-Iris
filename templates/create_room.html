@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create New Room - Project Iris</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+      }
+
+      body {
+        background: linear-gradient(135deg, #00a884 0%, #128c7e 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .container {
+        width: 90%;
+        max-width: 500px;
+        margin: 20px;
+      }
+
+      .create-container {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+      }
+
+      .create-container h2 {
+        color: #075e54;
+        margin-bottom: 25px;
+        text-align: center;
+        font-size: 2em;
+      }
+
+      .input-group {
+        margin-bottom: 20px;
+        position: relative;
+      }
+
+      .input-group i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #128c7e;
+      }
+
+      .input-group input {
+        width: 100%;
+        padding: 12px 45px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 1em;
+        transition: all 0.3s ease;
+      }
+
+      .input-group input:focus {
+        border-color: #128c7e;
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.1);
+      }
+
+      .create-btn {
+        width: 100%;
+        padding: 12px;
+        background: #128c7e;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        margin-bottom: 15px;
+      }
+
+      .create-btn:hover {
+        background: #075e54;
+        transform: translateY(-2px);
+      }
+
+      .back-btn {
+        width: 100%;
+        padding: 12px;
+        background: #666;
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-size: 1.1em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        text-decoration: none;
+        display: block;
+      }
+
+      .back-btn:hover {
+        background: #555;
+        transform: translateY(-2px);
+      }
+
+      .error-message {
+        color: #e74c3c;
+        text-align: center;
+        margin: 10px 0;
+        padding: 10px;
+        background: #fde8e6;
+        border-radius: 5px;
+        display: none;
+      }
+
+      .success-message {
+        color: #27ae60;
+        text-align: center;
+        margin: 10px 0;
+        padding: 10px;
+        background: #e8f5e9;
+        border-radius: 5px;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="create-container">
+        <h2><i class="fas fa-plus-circle"></i> Create New Room</h2>
+        <div class="error-message" id="error-message"></div>
+        <div class="success-message" id="success-message"></div>
+
+        <div class="input-group">
+          <i class="fas fa-user"></i>
+          <input
+            type="text"
+            id="username"
+            placeholder="Your Username"
+            required
+          />
+        </div>
+
+        <div class="input-group">
+          <i class="fas fa-door-open"></i>
+          <input type="text" id="room-name" placeholder="Room Name" required />
+        </div>
+
+        <div class="input-group">
+          <i class="fas fa-key"></i>
+          <input
+            type="password"
+            id="room-password"
+            placeholder="Room Password"
+            required
+          />
+        </div>
+
+        <button class="create-btn" onclick="createRoom()">
+          <i class="fas fa-plus-circle"></i> Create Room
+        </button>
+
+        <a href="/" class="back-btn">
+          <i class="fas fa-arrow-left"></i> Back to Home
+        </a>
+      </div>
+    </div>
+
+    <script>
+      function showError(message) {
+        const errorDiv = document.getElementById("error-message");
+        errorDiv.textContent = message;
+        errorDiv.style.display = "block";
+        setTimeout(() => {
+          errorDiv.style.display = "none";
+        }, 3000);
+      }
+
+      function showSuccess(message) {
+        const successDiv = document.getElementById("success-message");
+        successDiv.textContent = message;
+        successDiv.style.display = "block";
+        setTimeout(() => {
+          successDiv.style.display = "none";
+          window.location.href = "/chat";
+        }, 2000);
+      }
+
+      async function createRoom() {
+        const username = document.getElementById("username").value;
+        const roomName = document.getElementById("room-name").value;
+        const password = document.getElementById("room-password").value;
+
+        if (!username || !roomName || !password) {
+          showError("Please fill in all fields");
+          return;
+        }
+
+        try {
+          const response = await fetch("/create_room", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username,
+              room_name: roomName,
+              password,
+            }),
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            showSuccess("Room created successfully! Redirecting to chat...");
+          } else {
+            showError(data.message || "Failed to create room");
+          }
+        } catch (error) {
+          showError("Error creating room. Please try again.");
+        }
+      }
+    </script>
+  </body>
+</html>

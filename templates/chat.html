@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>Chat Room - Project Iris</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+        -webkit-tap-highlight-color: transparent;
+      }
+
+      body {
+        background: linear-gradient(135deg, #66d2ce 0%, #2daa9e 100%);
+        min-height: 100vh;
+        height: 100vh;
+        display: flex;
+        width: 100%;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .chat-container {
+        width: 100%;
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        background: #eaeaea;
+        height: 100%;
+        position: relative;
+        flex-direction: row;
+        overflow: hidden;
+      }
+
+      .users-sidebar {
+        width: 250px;
+        background: #e3d2c3;
+        padding: 15px;
+        border-right: 1px solid rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        position: absolute;
+        height: 100%;
+        left: 0;
+        z-index: 10;
+        transform: translateX(0);
+      }
+
+      .users-sidebar.hidden {
+        transform: translateX(-100%);
+      }
+
+      .toggle-sidebar {
+        display: none;
+        position: absolute;
+        right: -40px;
+        top: 10px;
+        background: #075e54;
+        color: white;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 0 8px 8px 0;
+        cursor: pointer;
+        z-index: 11;
+      }
+
+      .toggle-users {
+        background: transparent;
+        border: none;
+        color: white;
+        padding: 8px;
+        cursor: pointer;
+        display: none;
+      }
+
+      .toggle-users i {
+        font-size: 1.2em;
+      }
+
+      .users-list {
+        list-style: none;
+        overflow-y: auto;
+        max-height: calc(100vh - 60px);
+      }
+
+      .user-item {
+        padding: 8px;
+        margin-bottom: 5px;
+        border-radius: 8px;
+        background: #eaeaea;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.9em;
+      }
+
+      .user-status {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-right: 5px;
+        flex-shrink: 0;
+      }
+
+      .status-online {
+        background: #4caf50;
+      }
+      .status-offline {
+        background: #9e9e9e;
+      }
+      .status-typing {
+        background: #2196f3;
+      }
+
+      .chat-main {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        margin-left: 250px;
+        position: relative;
+        background: #eaeaea;
+        overflow: hidden;
+      }
+
+      .chat-header {
+        padding: 15px;
+        background: #2daa9e;
+        color: white;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .chat-header h2 {
+        font-size: 1.2em;
+        margin: 0;
+      }
+
+      .messages-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 15px;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        position: relative;
+        height: calc(100% - 120px);
+        padding-bottom: 80px;
+      }
+
+      .message {
+        margin-bottom: 12px;
+        max-width: 85%;
+        padding: 8px 12px;
+        border-radius: 12px;
+        position: relative;
+        word-wrap: break-word;
+      }
+
+      .message.received {
+        background: white;
+        margin-right: auto;
+        border-top-left-radius: 4px;
+      }
+
+      .message.sent {
+        background: #66d2ce;
+        color: white;
+        margin-left: auto;
+        border-top-right-radius: 4px;
+      }
+
+      .message .username {
+        font-size: 0.75em;
+        color: #2daa9e;
+        margin-bottom: 3px;
+      }
+
+      .message.sent .username {
+        color: rgba(255, 255, 255, 0.9);
+      }
+
+      .message .content {
+        font-size: 0.95em;
+        line-height: 1.4;
+      }
+
+      .message .timestamp {
+        font-size: 0.7em;
+        color: #666;
+        margin-top: 4px;
+        text-align: right;
+      }
+
+      .message.sent .timestamp {
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .typing-indicator {
+        padding: 8px 15px;
+        color: #2daa9e;
+        font-style: italic;
+        font-size: 0.85em;
+        display: none;
+        background: rgba(255, 255, 255, 0.9);
+        position: absolute;
+        bottom: 70px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        z-index: 99;
+      }
+
+      .input-container {
+        padding: 10px;
+        background: white;
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        border-top: 1px solid #e3d2c3;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        z-index: 100;
+      }
+
+      .message-input {
+        flex-grow: 1;
+        padding: 10px;
+        border: 1px solid #e3d2c3;
+        border-radius: 20px;
+        outline: none;
+        font-size: 0.95em;
+        background: #eaeaea;
+      }
+
+      .message-input:focus {
+        border-color: #66d2ce;
+        background: white;
+      }
+
+      .send-btn {
+        background: #2daa9e;
+        color: white;
+        border: none;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        transition: all 0.2s ease;
+      }
+
+      .send-btn:hover {
+        background: #66d2ce;
+      }
+
+      .send-btn:active {
+        background: #2daa9e;
+        transform: scale(0.95);
+      }
+
+      .error-message {
+        color: #2daa9e;
+        padding: 8px;
+        text-align: center;
+        display: none;
+        font-size: 0.85em;
+        background: rgba(234, 234, 234, 0.9);
+        border-radius: 4px;
+        margin: 8px;
+      }
+
+      @media (max-width: 768px) {
+        body {
+          position: fixed;
+          height: 100%;
+          overflow: hidden;
+        }
+
+        .chat-container {
+          margin: 0;
+          border-radius: 0;
+          box-shadow: none;
+          height: 100%;
+        }
+
+        .users-sidebar {
+          transform: translateX(-100%);
+          box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .users-sidebar.active {
+          transform: translateX(0);
+        }
+
+        .toggle-users {
+          display: block;
+        }
+
+        .chat-main {
+          margin-left: 0;
+          height: 100vh;
+        }
+
+        .messages-container {
+          height: calc(100vh - 120px - env(safe-area-inset-bottom));
+          padding-bottom: calc(70px + env(safe-area-inset-bottom));
+        }
+
+        .typing-indicator {
+          position: fixed;
+          bottom: calc(70px + env(safe-area-inset-bottom));
+        }
+
+        .input-container {
+          position: fixed;
+          padding-bottom: calc(10px + env(safe-area-inset-bottom));
+        }
+
+        /* Add overlay when sidebar is active */
+        .sidebar-overlay {
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: 9;
+        }
+
+        .sidebar-overlay.active {
+          display: block;
+        }
+      }
+
+      @media (max-width: 480px) {
+        .chat-header h2 {
+          font-size: 1.1em;
+        }
+
+        .message {
+          max-width: 95%;
+        }
+
+        .message .content {
+          font-size: 0.9em;
+        }
+
+        .typing-indicator {
+          font-size: 0.8em;
+          padding: 6px 10px;
+        }
+      }
+
+      /* iOS specific fixes */
+      @supports (-webkit-touch-callout: none) {
+        html,
+        body {
+          height: -webkit-fill-available;
+        }
+
+        .chat-container {
+          min-height: -webkit-fill-available;
+        }
+
+        .chat-main {
+          min-height: -webkit-fill-available;
+        }
+
+        .messages-container {
+          padding-bottom: calc(70px + env(safe-area-inset-bottom));
+        }
+
+        .input-container {
+          position: fixed;
+          bottom: env(safe-area-inset-bottom);
+          padding-bottom: calc(10px + env(safe-area-inset-bottom));
+          background: white;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <!-- Add overlay div -->
+      <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+      <div class="users-sidebar">
+        <h3>Users in Room</h3>
+        <div id="users-list" class="users-list">
+          <!-- Users will be populated here -->
+        </div>
+      </div>
+
+      <div class="chat-main">
+        <div class="chat-header">
+          <h2>Chat Room</h2>
+          <button class="toggle-users" onclick="toggleSidebar()">
+            <i class="fas fa-users"></i>
+          </button>
+        </div>
+
+        <div class="messages-container" id="messages">
+          <!-- Messages will be populated here -->
+        </div>
+
+        <div class="typing-indicator" id="typing-indicator">
+          <!-- Typing indicator will show here -->
+        </div>
+
+        <div class="input-container">
+          <input
+            type="text"
+            id="message-input"
+            class="message-input"
+            placeholder="Type your message..."
+          />
+          <button onclick="sendMessage()" class="send-btn">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      var socket = io();
+      var messageInput = document.getElementById("message-input");
+      var messagesDiv = document.getElementById("messages");
+      var typingIndicator = document.getElementById("typing-indicator");
+      var typingTimeout;
+      var sidebar = document.querySelector(".users-sidebar");
+      var overlay = document.querySelector(".sidebar-overlay");
+
+      function toggleSidebar() {
+        sidebar.classList.toggle("active");
+        overlay.classList.toggle("active");
+
+        // Prevent body scroll when sidebar is open
+        if (sidebar.classList.contains("active")) {
+          document.body.style.overflow = "hidden";
+        } else {
+          document.body.style.overflow = "";
+        }
+      }
+
+      // Hide sidebar when clicking outside
+      document.addEventListener("click", function (event) {
+        if (window.innerWidth <= 768) {
+          const isClickInsideSidebar = sidebar.contains(event.target);
+          const isClickOnToggleButton = event.target.closest(".toggle-users");
+
+          if (
+            !isClickInsideSidebar &&
+            !isClickOnToggleButton &&
+            sidebar.classList.contains("active")
+          ) {
+            toggleSidebar();
+          }
+        }
+      });
+
+      // Hide sidebar when pressing Escape key
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape" && sidebar.classList.contains("active")) {
+          toggleSidebar();
+        }
+      });
+
+      // Hide sidebar when screen orientation changes
+      window.addEventListener("orientationchange", function () {
+        if (sidebar.classList.contains("active")) {
+          toggleSidebar();
+        }
+      });
+
+      // Connect to socket
+      socket.on("connect", function () {
+        socket.emit("join", {});
+      });
+
+      // Improved scroll to bottom function
+      function scrollToBottom(smooth = false) {
+        const messagesContainer = document.querySelector(".messages-container");
+        const lastMessage = messagesContainer.lastElementChild;
+
+        if (lastMessage) {
+          const containerHeight = messagesContainer.clientHeight;
+          const lastMessageHeight = lastMessage.offsetHeight;
+          const scrollOffset = 80; // Extra space to account for input container
+
+          messagesContainer.scrollTo({
+            top:
+              messagesContainer.scrollHeight - containerHeight + scrollOffset,
+            behavior: smooth ? "smooth" : "auto",
+          });
+        }
+      }
+
+      // Handle incoming messages with improved scroll
+      socket.on("message", function (data) {
+        const messagesContainer = document.querySelector(".messages-container");
+        const shouldScroll =
+          messagesContainer.scrollTop + messagesContainer.clientHeight >=
+          messagesContainer.scrollHeight - 100;
+
+        addMessage(data);
+
+        if (shouldScroll) {
+          scrollToBottom(true);
+        }
+      });
+
+      // Handle loading existing messages with improved scroll
+      socket.on("load_messages", function (data) {
+        messagesDiv.innerHTML = "";
+        data.messages.forEach(function (msg) {
+          addMessage(msg);
+        });
+        scrollToBottom();
+      });
+
+      // Handle user typing status
+      socket.on("user_typing", function (data) {
+        if (data.typing) {
+          typingIndicator.textContent = `${data.username} is typing...`;
+          typingIndicator.style.display = "block";
+        } else {
+          typingIndicator.style.display = "none";
+        }
+      });
+
+      // Handle room users update
+      socket.on("room_users", function (data) {
+        const usersList = document.getElementById("users-list");
+        usersList.innerHTML = "";
+
+        data.users.forEach(function (user) {
+          const userItem = document.createElement("div");
+          userItem.className = "user-item";
+
+          const statusDot = document.createElement("span");
+          statusDot.className = `user-status status-${user.status}`;
+
+          const userName = document.createElement("span");
+          userName.textContent = user.username;
+
+          userItem.appendChild(statusDot);
+          userItem.appendChild(userName);
+          usersList.appendChild(userItem);
+        });
+      });
+
+      // Handle errors
+      socket.on("error", function (data) {
+        console.error("Error:", data.msg);
+        const errorDiv = document.createElement("div");
+        errorDiv.className = "error-message";
+        errorDiv.textContent = data.msg;
+        messagesDiv.appendChild(errorDiv);
+        setTimeout(() => errorDiv.remove(), 5000);
+      });
+
+      function sendMessage() {
+        var message = messageInput.value.trim();
+        if (message) {
+          socket.emit("message", { message: message });
+          messageInput.value = "";
+          // Reset typing status
+          socket.emit("typing", { typing: false });
+          // Hide keyboard on mobile
+          messageInput.blur();
+          // Ensure scroll to bottom after sending
+          scrollToBottom(true);
+        }
+      }
+
+      messageInput.addEventListener("keypress", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        } else {
+          // Handle typing indicator
+          socket.emit("typing", { typing: true });
+
+          // Clear previous timeout
+          clearTimeout(typingTimeout);
+
+          // Set new timeout
+          typingTimeout = setTimeout(function () {
+            socket.emit("typing", { typing: false });
+          }, 2000);
+        }
+      });
+
+      function addMessage(data) {
+        const messageDiv = document.createElement("div");
+        messageDiv.className = `message ${
+          data.username === "{{ session.username }}" ? "sent" : "received"
+        }`;
+
+        const usernameDiv = document.createElement("div");
+        usernameDiv.className = "username";
+        usernameDiv.textContent = data.username;
+
+        const contentDiv = document.createElement("div");
+        contentDiv.className = "content";
+        contentDiv.textContent = data.message;
+
+        const timestampDiv = document.createElement("div");
+        timestampDiv.className = "timestamp";
+        timestampDiv.textContent = new Date(
+          data.created_at
+        ).toLocaleTimeString();
+
+        messageDiv.appendChild(usernameDiv);
+        messageDiv.appendChild(contentDiv);
+        messageDiv.appendChild(timestampDiv);
+
+        messagesDiv.appendChild(messageDiv);
+
+        // If this is a sent message, always scroll to bottom
+        if (data.username === "{{ session.username }}") {
+          scrollToBottom(true);
+        }
+      }
+
+      // Auto-scroll to bottom when new messages arrive with improved behavior
+      const observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+          if (mutation.addedNodes.length) {
+            const messagesContainer = document.querySelector(
+              ".messages-container"
+            );
+            const shouldScroll =
+              messagesContainer.scrollTop + messagesContainer.clientHeight >=
+              messagesContainer.scrollHeight - 100;
+
+            if (shouldScroll) {
+              scrollToBottom(true);
+            }
+          }
+        });
+      });
+
+      observer.observe(messagesDiv, { childList: true });
+
+      // Prevent body scrolling on mobile
+      document.body.addEventListener(
+        "touchmove",
+        function (e) {
+          if (e.target.closest(".messages-container, .users-list") === null) {
+            e.preventDefault();
+          }
+        },
+        { passive: false }
+      );
+
+      // Fix viewport height issues on mobile with improved scroll
+      function setViewportHeight() {
+        let vh = window.innerHeight * 0.01;
+        document.documentElement.style.setProperty("--vh", `${vh}px`);
+
+        const messagesContainer = document.querySelector(".messages-container");
+        const inputContainer = document.querySelector(".input-container");
+
+        // Only adjust padding on mobile devices
+        if (window.innerWidth <= 768) {
+          const inputHeight = inputContainer.offsetHeight;
+
+          if (window.innerHeight < window.outerHeight) {
+            // Keyboard is shown
+            messagesContainer.style.paddingBottom = "80px";
+          } else {
+            // Keyboard is hidden
+            messagesContainer.style.paddingBottom = `${inputHeight + 20}px`;
+          }
+        } else {
+          // Reset padding on desktop but keep space for messages
+          messagesContainer.style.paddingBottom = "80px";
+        }
+
+        scrollToBottom();
+      }
+
+      // Call on various events that might change the viewport
+      window.addEventListener("resize", setViewportHeight);
+      window.addEventListener("orientationchange", setViewportHeight);
+      window.addEventListener("focusin", setViewportHeight);
+      window.addEventListener("focusout", setViewportHeight);
+      setViewportHeight();
+
+      // Ensure input is visible when focused with improved scroll
+      messageInput.addEventListener("focus", function () {
+        setTimeout(function () {
+          scrollToBottom(true);
+        }, 100);
+      });
+    </script>
+  </body>
+</html>
