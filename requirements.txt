@@ -1,6 +1,11 @@
-Flask==3.0.2
+Flask==2.3.3
 Flask-SocketIO==5.3.6
-python-dotenv==1.0.1
+Flask-Login==0.6.3
+Flask-OAuthlib==0.9.6
+oauthlib==3.2.2
+requests==2.31.0
+python-dotenv==1.0.0
+PyJWT==2.8.0
 SQLAlchemy==2.0.27
 eventlet==0.35.1
 gunicorn==21.2.0

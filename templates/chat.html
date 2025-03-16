@@ -166,12 +166,11 @@
       }
 
       .message {
-        margin-bottom: 12px;
-        max-width: 85%;
-        padding: 8px 12px;
-        border-radius: 12px;
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 10px;
+        max-width: 70%;
         position: relative;
-        word-wrap: break-word;
       }
 
       .message.received {
@@ -211,6 +210,32 @@
 
       .message.sent .timestamp {
         color: rgba(255, 255, 255, 0.8);
+      }
+
+      .message .read-status {
+        font-size: 0.7em;
+        color: #666;
+        margin-top: 4px;
+        cursor: pointer;
+      }
+
+      .read-tooltip {
+        display: none;
+        position: absolute;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.8em;
+        bottom: 100%;
+        left: 0;
+        margin-bottom: 5px;
+        white-space: nowrap;
+        z-index: 1000;
+      }
+
+      .read-status:hover .read-tooltip {
+        display: block;
       }
 
       .typing-indicator {
@@ -402,9 +427,119 @@
           background: white;
         }
       }
+
+      /* Add context menu styles */
+      .context-menu {
+        display: none;
+        position: fixed;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        padding: 5px 0;
+        z-index: 1000;
+        min-width: 150px;
+      }
+
+      .context-menu-item {
+        padding: 8px 15px;
+        cursor: pointer;
+        font-size: 0.9em;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .context-menu-item:hover {
+        background: #f5f5f5;
+      }
+
+      .context-menu-item i {
+        font-size: 0.9em;
+        color: #2daa9e;
+      }
+
+      .read-by-modal {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 3px 15px rgba(0, 0, 0, 0.2);
+        z-index: 1001;
+        min-width: 280px;
+        max-width: 90%;
+      }
+
+      .read-by-modal h3 {
+        margin-bottom: 15px;
+        color: #2daa9e;
+        font-size: 1.1em;
+      }
+
+      .read-by-list {
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .read-by-item {
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.9em;
+      }
+
+      .read-by-item:last-child {
+        border-bottom: none;
+      }
+
+      .read-by-time {
+        color: #666;
+        font-size: 0.85em;
+      }
+
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+      }
     </style>
   </head>
   <body>
+    <!-- Add context menu -->
+    <div id="context-menu" class="context-menu">
+      <div
+        class="context-menu-item"
+        onclick="showReadByModal(selectedMessageId)"
+      >
+        <i class="fas fa-eye"></i>
+        Read by
+      </div>
+    </div>
+
+    <!-- Add read by modal -->
+    <div
+      id="modal-overlay"
+      class="modal-overlay"
+      onclick="hideReadByModal()"
+    ></div>
+    <div id="read-by-modal" class="read-by-modal">
+      <h3>Read by</h3>
+      <div id="read-by-list" class="read-by-list">
+        <!-- Read by list will be populated here -->
+      </div>
+    </div>
+
     <div class="chat-container">
       <!-- Add overlay div -->
       <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
@@ -454,6 +589,12 @@
       var typingTimeout;
       var sidebar = document.querySelector(".users-sidebar");
       var overlay = document.querySelector(".sidebar-overlay");
+
+      // Add global variable for selected message
+      var selectedMessageId = null;
+      var contextMenu = document.getElementById("context-menu");
+      var readByModal = document.getElementById("read-by-modal");
+      var modalOverlay = document.getElementById("modal-overlay");
 
       function toggleSidebar() {
         sidebar.classList.toggle("active");
@@ -621,6 +762,7 @@
         messageDiv.className = `message ${
           data.username === "{{ session.username }}" ? "sent" : "received"
         }`;
+        messageDiv.setAttribute("data-message-id", data.id);
 
         const usernameDiv = document.createElement("div");
         usernameDiv.className = "username";
@@ -630,21 +772,55 @@
         contentDiv.className = "content";
         contentDiv.textContent = data.message;
 
-        const timestampDiv = document.createElement("div");
-        timestampDiv.className = "timestamp";
-        timestampDiv.textContent = new Date(
-          data.created_at
-        ).toLocaleTimeString();
+        const timeDiv = document.createElement("div");
+        timeDiv.className = "time";
+        timeDiv.textContent = new Date(data.created_at).toLocaleTimeString();
+
+        const readStatusDiv = document.createElement("div");
+        readStatusDiv.className = "read-status";
+        updateReadStatus(data.id, data.read_by || []);
 
         messageDiv.appendChild(usernameDiv);
         messageDiv.appendChild(contentDiv);
-        messageDiv.appendChild(timestampDiv);
+        messageDiv.appendChild(timeDiv);
+        messageDiv.appendChild(readStatusDiv);
 
         messagesDiv.appendChild(messageDiv);
+        scrollToBottom(true);
 
-        // If this is a sent message, always scroll to bottom
-        if (data.username === "{{ session.username }}") {
-          scrollToBottom(true);
+        // Add click handler for received messages (left click only)
+        if (data.username !== "{{ session.username }}") {
+          messageDiv.addEventListener("click", function (e) {
+            if (e.button === 0) {
+              // Left click only
+              socket.emit("message_read", { message_id: data.id });
+            }
+          });
+        }
+      }
+
+      // Handle message read status updates
+      socket.on("message_read_status", function (data) {
+        updateReadStatus(data.message_id, data.read_by);
+      });
+
+      function updateReadStatus(messageId, readBy) {
+        const messageDiv = document.querySelector(
+          `[data-message-id="${messageId}"]`
+        );
+        if (!messageDiv) return;
+
+        const readStatusDiv = messageDiv.querySelector(".read-status");
+        if (!readStatusDiv) return;
+
+        if (readBy.length > 0) {
+          const tooltipContent = `Read by: ${readBy.join(", ")}`;
+          readStatusDiv.innerHTML = `
+            <span>Read by ${readBy.length}</span>
+            <span class="read-tooltip">${tooltipContent}</span>
+          `;
+        } else {
+          readStatusDiv.innerHTML = "Unread";
         }
       }
 
@@ -719,6 +895,81 @@
           scrollToBottom(true);
         }, 100);
       });
+
+      // Handle context menu
+      document.addEventListener("contextmenu", function (e) {
+        const messageElement = e.target.closest(".message");
+        if (messageElement) {
+          e.preventDefault();
+          selectedMessageId = messageElement.getAttribute("data-message-id");
+
+          // Position the context menu
+          contextMenu.style.display = "block";
+          contextMenu.style.left = `${e.pageX}px`;
+          contextMenu.style.top = `${e.pageY}px`;
+
+          // Ensure menu doesn't go off screen
+          const rect = contextMenu.getBoundingClientRect();
+          if (rect.right > window.innerWidth) {
+            contextMenu.style.left = `${e.pageX - rect.width}px`;
+          }
+          if (rect.bottom > window.innerHeight) {
+            contextMenu.style.top = `${e.pageY - rect.height}px`;
+          }
+        }
+      });
+
+      // Hide context menu when clicking outside
+      document.addEventListener("click", function () {
+        contextMenu.style.display = "none";
+      });
+
+      // Show read by modal
+      function showReadByModal(messageId) {
+        if (!messageId) return;
+
+        // Get message element and its read by data
+        const messageElement = document.querySelector(
+          `[data-message-id="${messageId}"]`
+        );
+        if (!messageElement) return;
+
+        // Request updated read status from server
+        socket.emit("message_read_status_request", { message_id: messageId });
+      }
+
+      // Handle read status response
+      socket.on("message_read_status_response", function (data) {
+        const readByList = document.getElementById("read-by-list");
+        readByList.innerHTML = "";
+
+        if (data.reads && data.reads.length > 0) {
+          data.reads.forEach(function (read) {
+            const readByItem = document.createElement("div");
+            readByItem.className = "read-by-item";
+            readByItem.innerHTML = `
+              <span>${read.username}</span>
+              <span class="read-by-time">${new Date(
+                read.read_at
+              ).toLocaleString()}</span>
+            `;
+            readByList.appendChild(readByItem);
+          });
+        } else {
+          readByList.innerHTML =
+            '<div class="read-by-item">No one has read this message yet</div>';
+        }
+
+        // Show modal and overlay
+        modalOverlay.style.display = "block";
+        readByModal.style.display = "block";
+      });
+
+      // Hide read by modal
+      function hideReadByModal() {
+        modalOverlay.style.display = "none";
+        readByModal.style.display = "none";
+      }
     </script>
   </body>
 </html>

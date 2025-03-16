@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register - Project Iris</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+      }
+
+      body {
+        background: linear-gradient(135deg, #66d2ce 0%, #2daa9e 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .register-container {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 400px;
+      }
+
+      .register-header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .register-header h1 {
+        color: #2daa9e;
+        font-size: 1.8em;
+        margin-bottom: 10px;
+      }
+
+      .register-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .form-group label {
+        color: #666;
+        font-size: 0.9em;
+      }
+
+      .form-group input {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 1em;
+        transition: border-color 0.3s;
+      }
+
+      .form-group input:focus {
+        border-color: #2daa9e;
+        outline: none;
+      }
+
+      .register-btn {
+        background: #2daa9e;
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .register-btn:hover {
+        background: #66d2ce;
+      }
+
+      .divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 20px 0;
+        color: #666;
+      }
+
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .divider span {
+        padding: 0 10px;
+      }
+
+      .oauth-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .oauth-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: background 0.3s;
+        text-decoration: none;
+        color: #333;
+      }
+
+      .oauth-btn:hover {
+        background: #f5f5f5;
+      }
+
+      .oauth-btn i {
+        font-size: 1.2em;
+      }
+
+      .oauth-btn.google i {
+        color: #db4437;
+      }
+
+      .oauth-btn.github i {
+        color: #333;
+      }
+
+      .login-link {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: #666;
+      }
+
+      .login-link a {
+        color: #2daa9e;
+        text-decoration: none;
+      }
+
+      .login-link a:hover {
+        text-decoration: underline;
+      }
+
+      .error-message {
+        background: #ffebee;
+        color: #c62828;
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-size: 0.9em;
+        display: none;
+      }
+
+      .password-requirements {
+        font-size: 0.8em;
+        color: #666;
+        margin-top: 5px;
+      }
+
+      .password-requirements ul {
+        list-style: none;
+        margin-top: 5px;
+        padding-left: 5px;
+      }
+
+      .password-requirements li {
+        margin-bottom: 3px;
+      }
+
+      .password-requirements li::before {
+        content: "•";
+        color: #2daa9e;
+        margin-right: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="register-container">
+      <div class="register-header">
+        <h1>Create Account</h1>
+        <p>Join Project Iris today</p>
+      </div>
+
+      <div id="error-message" class="error-message"></div>
+
+      <form class="register-form" id="register-form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" name="username" required />
+        </div>
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required />
+          <div class="password-requirements">
+            Password must contain:
+            <ul>
+              <li>At least 8 characters</li>
+              <li>At least one uppercase letter</li>
+              <li>At least one number</li>
+              <li>At least one special character</li>
+            </ul>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="confirm-password">Confirm Password</label>
+          <input
+            type="password"
+            id="confirm-password"
+            name="confirm-password"
+            required
+          />
+        </div>
+        <button type="submit" class="register-btn">Create Account</button>
+      </form>
+
+      <div class="divider">
+        <span>or register with</span>
+      </div>
+
+      <div class="oauth-buttons">
+        <a href="/login/google" class="oauth-btn google">
+          <i class="fab fa-google"></i>
+          Continue with Google
+        </a>
+        <a href="/login/github" class="oauth-btn github">
+          <i class="fab fa-github"></i>
+          Continue with GitHub
+        </a>
+      </div>
+
+      <div class="login-link">
+        Already have an account? <a href="/login">Sign in</a>
+      </div>
+    </div>
+
+    <script>
+      const registerForm = document.getElementById("register-form");
+      const errorMessage = document.getElementById("error-message");
+
+      function validatePassword(password) {
+        const minLength = password.length >= 8;
+        const hasUpperCase = /[A-Z]/.test(password);
+        const hasNumber = /[0-9]/.test(password);
+        const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+        return minLength && hasUpperCase && hasNumber && hasSpecial;
+      }
+
+      registerForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const username = document.getElementById("username").value;
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const confirmPassword =
+          document.getElementById("confirm-password").value;
+
+        if (!validatePassword(password)) {
+          errorMessage.textContent = "Password does not meet requirements";
+          errorMessage.style.display = "block";
+          return;
+        }
+
+        if (password !== confirmPassword) {
+          errorMessage.textContent = "Passwords do not match";
+          errorMessage.style.display = "block";
+          return;
+        }
+
+        try {
+          const response = await fetch("/register", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ username, email, password }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            window.location.href = "/login";
+          } else {
+            errorMessage.textContent = data.message;
+            errorMessage.style.display = "block";
+          }
+        } catch (error) {
+          errorMessage.textContent = "An error occurred. Please try again.";
+          errorMessage.style.display = "block";
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Project Iris</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+      }
+
+      body {
+        background: linear-gradient(135deg, #66d2ce 0%, #2daa9e 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .login-container {
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 400px;
+      }
+
+      .login-header {
+        text-align: center;
+        margin-bottom: 30px;
+      }
+
+      .login-header h1 {
+        color: #2daa9e;
+        font-size: 1.8em;
+        margin-bottom: 10px;
+      }
+
+      .login-form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+
+      .form-group label {
+        color: #666;
+        font-size: 0.9em;
+      }
+
+      .form-group input {
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 1em;
+        transition: border-color 0.3s;
+      }
+
+      .form-group input:focus {
+        border-color: #2daa9e;
+        outline: none;
+      }
+
+      .login-btn {
+        background: #2daa9e;
+        color: white;
+        border: none;
+        padding: 12px;
+        border-radius: 6px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: background 0.3s;
+      }
+
+      .login-btn:hover {
+        background: #66d2ce;
+      }
+
+      .divider {
+        display: flex;
+        align-items: center;
+        text-align: center;
+        margin: 20px 0;
+        color: #666;
+      }
+
+      .divider::before,
+      .divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 1px solid #ddd;
+      }
+
+      .divider span {
+        padding: 0 10px;
+      }
+
+      .oauth-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .oauth-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: background 0.3s;
+        text-decoration: none;
+        color: #333;
+      }
+
+      .oauth-btn:hover {
+        background: #f5f5f5;
+      }
+
+      .oauth-btn i {
+        font-size: 1.2em;
+      }
+
+      .oauth-btn.google i {
+        color: #db4437;
+      }
+
+      .oauth-btn.github i {
+        color: #333;
+      }
+
+      .register-link {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 0.9em;
+        color: #666;
+      }
+
+      .register-link a {
+        color: #2daa9e;
+        text-decoration: none;
+      }
+
+      .register-link a:hover {
+        text-decoration: underline;
+      }
+
+      .error-message {
+        background: #ffebee;
+        color: #c62828;
+        padding: 10px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-size: 0.9em;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="login-header">
+        <h1>Welcome Back</h1>
+        <p>Sign in to continue to Project Iris</p>
+      </div>
+
+      <div id="error-message" class="error-message"></div>
+
+      <form class="login-form" id="login-form">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+        <button type="submit" class="login-btn">Sign In</button>
+      </form>
+
+      <div class="divider">
+        <span>or continue with</span>
+      </div>
+
+      <div class="oauth-buttons">
+        <a
+          href="#"
+          class="oauth-btn google"
+          onclick="handleOAuthLogin('google')"
+        >
+          <i class="fab fa-google"></i>
+          Sign in with Google
+        </a>
+        <a
+          href="#"
+          class="oauth-btn github"
+          onclick="handleOAuthLogin('github')"
+        >
+          <i class="fab fa-github"></i>
+          Sign in with GitHub
+        </a>
+      </div>
+
+      <div class="register-link">
+        Don't have an account? <a href="/register">Sign up</a>
+      </div>
+    </div>
+
+    <script>
+      const loginForm = document.getElementById("login-form");
+      const errorMessage = document.getElementById("error-message");
+
+      // Generate a unique device ID if not exists
+      function getDeviceId() {
+        let deviceId = localStorage.getItem("device_id");
+        if (!deviceId) {
+          deviceId = "device_" + Math.random().toString(36).substr(2, 9);
+          localStorage.setItem("device_id", deviceId);
+        }
+        return deviceId;
+      }
+
+      // Get device name
+      function getDeviceName() {
+        const platform = navigator.platform;
+        const userAgent = navigator.userAgent;
+        let deviceName = "Unknown Device";
+
+        if (/iPhone|iPad|iPod/.test(userAgent)) {
+          deviceName = "iOS Device";
+        } else if (/Android/.test(userAgent)) {
+          deviceName = "Android Device";
+        } else if (/Win/.test(platform)) {
+          deviceName = "Windows Device";
+        } else if (/Mac/.test(platform)) {
+          deviceName = "Mac Device";
+        } else if (/Linux/.test(platform)) {
+          deviceName = "Linux Device";
+        }
+
+        return deviceName;
+      }
+
+      // Handle OAuth login
+      function handleOAuthLogin(provider) {
+        const deviceId = getDeviceId();
+        const deviceName = getDeviceName();
+        window.location.href = `/login/${provider}?device_id=${encodeURIComponent(
+          deviceId
+        )}&device_name=${encodeURIComponent(deviceName)}`;
+      }
+
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const deviceId = getDeviceId();
+        const deviceName = getDeviceName();
+
+        try {
+          const response = await fetch("/login", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              email,
+              password,
+              device_id: deviceId,
+              device_name: deviceName,
+            }),
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            window.location.href = "/";
+          } else {
+            errorMessage.textContent = data.message;
+            errorMessage.style.display = "block";
+          }
+        } catch (error) {
+          errorMessage.textContent = "An error occurred. Please try again.";
+          errorMessage.style.display = "block";
+        }
+      });
+    </script>
+  </body>
+</html>
