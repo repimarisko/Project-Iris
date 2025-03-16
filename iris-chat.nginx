@@ -1,0 +1,18 @@
+server {
+    listen 80;
+    server_name YOUR_SERVER_IP;  # Ganti dengan IP statis server Anda
+
+    location / {
+        include proxy_params;
+        proxy_pass http://unix:/var/www/Project-Iris/iris-chat.sock;
+    }
+
+    location /socket.io {
+        include proxy_params;
+        proxy_http_version 1.1;
+        proxy_buffering off;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_pass http://unix:/var/www/Project-Iris/iris-chat.sock;
+    }
+} 
